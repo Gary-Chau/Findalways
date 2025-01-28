@@ -7,10 +7,13 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "canvas-confetti": "^1.9.3",
+    "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.28.2",
     "react-scripts": "5.0.1",
+    "use-sound": "^4.0.3",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.17.0"
   },
@@ -18,9 +21,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -40,7 +41,7 @@
       "last 1 safari version"
     ]
   },
-  "homepage": "https://gary-chau.github.io/Findalways",
+  "homepage": "https://gary-chau.github.io/Findalways/",
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "gh-pages": "^6.3.0"

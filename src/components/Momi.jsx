@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import './Momi.css';
+import confetti from 'canvas-confetti';
 
 const Momi = () => {
   const [formattedData, setFormattedData] = useState([]);
@@ -13,6 +14,9 @@ const Momi = () => {
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef(null);
   const outputRef = useRef(null);
+  const [darkMode, setDarkMode] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState([]);
 
   useEffect(() => {
     if (loading) {
@@ -112,6 +116,7 @@ const Momi = () => {
 
       setFormattedData(newFormattedData);
       setSuccessMessage('處理完成！您現在可以下載檔案。');
+      runFireworks();
       
       // Scroll to output
       if (outputRef.current) {
@@ -145,6 +150,8 @@ const Momi = () => {
     // Show success animation
     setSuccessMessage('檔案已成功下載！');
     setTimeout(() => setSuccessMessage(''), 3000);
+
+    runFireworks();
   };
 
   const handleCopyToClipboard = async () => {
@@ -158,10 +165,79 @@ const Momi = () => {
     }
   };
 
+  const handlePreview = async () => {
+    if (!fileInputRef.current.files.length) return;
+    const file = fileInputRef.current.files[0];
+    const data = await readFile(file);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    setPreviewData(jsonData.slice(0, 5));
+    setShowPreview(true);
+  };
+
+  const runFireworks = () => {
+    const count = 200;
+    const defaults = {
+      origin: { y: 0.7 },
+      colors: ['#4299e1', '#48bb78', '#f6e05e', '#f56565'],
+      particleCount: 50,
+      spread: 100
+    };
+
+    confetti({ ...defaults, angle: 60 });
+    confetti({ ...defaults, angle: 120 });
+    
+    for (let i = 0; i < count; i++) {
+      confetti({
+        ...defaults,
+        particleCount: 1,
+        startVelocity: 0,
+        gravity: 0.3 - (Math.random() * 0.1),
+        ticks: 200 + (Math.random() * 50)
+      });
+    }
+  };
+
   return (
-    <div className="container">
-      <h1>Momi 格式轉換器</h1>
-      
+    <div className={`container ${darkMode ? 'dark-mode' : ''}`}>
+      <div className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
+        {darkMode ? '🌞' : '🌙'}
+      </div>
+
+      {showPreview && (
+        <div className="preview-modal">
+          <div className="preview-content">
+            <h3>檔案預覽 <i className="fas fa-table"></i></h3>
+            <table>
+              <tbody>
+                {previewData.map((row, i) => (
+                  <tr key={i}>
+                    {row.map((cell, j) => <td key={j}>{cell}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button 
+              className="close-preview"
+              onClick={() => setShowPreview(false)}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button
+        className="preview-btn"
+        onClick={handlePreview}
+        disabled={!fileInputRef.current?.files?.length}
+      >
+        <i className="fas fa-eye"></i>
+        預覽檔案
+      </button>
+
       <div 
         className={`drop-zone ${dragActive ? 'active' : ''}`}
         onDragEnter={handleDrag}
@@ -253,8 +329,9 @@ const Momi = () => {
 
       {successMessage && (
         <div className="success-message">
-          <i className="fas fa-check-circle"></i>
+          <i className="fas fa-party-horn"></i>
           {successMessage}
+          <span className="celebrate-emoji">🎉</span>
         </div>
       )}
 
