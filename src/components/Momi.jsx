@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import './Momi.css';
 import confetti from 'canvas-confetti';
+import { useSpring, animated } from '@react-spring/web';
 
 const Momi = () => {
   const [formattedData, setFormattedData] = useState([]);
@@ -17,6 +18,25 @@ const Momi = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState([]);
+  const [petPosition] = useState(() => ({ x: window.innerWidth - 100, y: 100 }));
+  const [petMood, setPetMood] = useState('happy');
+  const [bounce, setBounce] = useState(false);
+
+  const themeAnimation = useSpring({
+    transform: darkMode ? 'rotate(360deg)' : 'rotate(0deg)',
+    config: { tension: 300, friction: 10 }
+  });
+
+  const buttonAnimation = useSpring({
+    scale: 1,
+    from: { scale: 0.9 },
+    config: { mass: 1, tension: 200, friction: 10 }
+  });
+
+  const petAnimation = useSpring({
+    transform: bounce ? 'translateY(-20px)' : 'translateY(0px)',
+    config: { tension: 200, friction: 10 }
+  });
 
   useEffect(() => {
     if (loading) {
@@ -108,10 +128,11 @@ const Momi = () => {
         entry += `描述自已：${row[4] || 'N/A'}\n\n`;
         entry += `要求：${row[5] || 'N/A'}\n\n`;
         entry += `聯絡方式：${row[6] || 'N/A'}\n\n`;
+
         entry += '如果有緣人想認識無留tg既投稿人，可以dm平台的！🙊🙊🙊🙊🙊\n';
         entry += '投稿link係主頁🧨大家隨意投稿🎐\n\n';
 
-        newFormattedData.push(entry);
+        newFormattedData.push({ text: entry, hasPhoto: !!row[7] });
       }
 
       setFormattedData(newFormattedData);
@@ -139,7 +160,7 @@ const Momi = () => {
   };
 
   const handleDownload = () => {
-    const text = formattedData.join('\n\n------------------------\n\n');
+    const text = formattedData.map(entry => entry.text).join('\n\n------------------------\n\n');
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -155,7 +176,7 @@ const Momi = () => {
   };
 
   const handleCopyToClipboard = async () => {
-    const text = formattedData.join('\n\n------------------------\n\n');
+    const text = formattedData.map(entry => entry.text).join('\n\n------------------------\n\n');
     try {
       await navigator.clipboard.writeText(text);
       setSuccessMessage('已複製到剪貼板！');
@@ -200,11 +221,22 @@ const Momi = () => {
     }
   };
 
+  const handlePetInteraction = () => {
+    setBounce(true);
+    setTimeout(() => setBounce(false), 1000);
+    runFireworks();
+    setPetMood(['happy', 'surprised', 'excited'][Math.floor(Math.random() * 3)]);
+  };
+
   return (
     <div className={`container ${darkMode ? 'dark-mode' : ''}`}>
-      <div className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
+      <animated.div 
+        className="theme-toggle" 
+        style={themeAnimation}
+        onClick={() => setDarkMode(!darkMode)}
+      >
         {darkMode ? '🌞' : '🌙'}
-      </div>
+      </animated.div>
 
       {showPreview && (
         <div className="preview-modal">
@@ -309,14 +341,15 @@ const Momi = () => {
         )}
       </div>
 
-      <button 
+      <animated.button 
         className="process-btn" 
+        style={buttonAnimation}
         onClick={handleProcess} 
         disabled={loading}
       >
         <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-file-import'} button-icon`}></i>
         {loading ? '處理中...' : '處理檔案'}
-      </button>
+      </animated.button>
 
       {loading && (
         <div className="progress-bar">
@@ -351,7 +384,16 @@ const Momi = () => {
             </button>
           </div>
           <div className="output">
-            {formattedData.join('\n\n------------------------\n\n')}
+            {formattedData.map((entry, index) => (
+              <div key={index} className="output-entry">
+                <pre>{entry.text}</pre>
+                {entry.hasPhoto && (
+                  <div className="photo-indicator">
+                    <span className="photo-indicator-text">此投稿包含照片</span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
           <button className="download-btn" onClick={handleDownload}>
             <i className="fas fa-download button-icon"></i>
@@ -359,6 +401,21 @@ const Momi = () => {
           </button>
         </div>
       )}
+
+      <animated.div 
+        className="virtual-pet"
+        style={{
+          ...petAnimation,
+          left: petPosition.x,
+          top: petPosition.y,
+        }}
+        onClick={handlePetInteraction}
+      >
+        <span role="img" aria-label="pet">
+          {petMood === 'happy' ? '🐶' : petMood === 'surprised' ? '😲' : '🐾'}
+        </span>
+        <div className="pet-message">Click me!</div>
+      </animated.div>
     </div>
   );
 };

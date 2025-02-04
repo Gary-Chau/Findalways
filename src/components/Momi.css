@@ -501,3 +501,133 @@ input[type="file"]::file-selector-button:hover {
     right: 15px;
   }
 }
+
+/* Virtual Pet Styles */
+.virtual-pet {
+  position: fixed;
+  cursor: pointer;
+  font-size: 3rem;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  animation: float 6s ease-in-out infinite;
+  filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+}
+
+.virtual-pet:hover {
+  transform: scale(1.1) rotate(10deg);
+}
+
+.pet-message {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.virtual-pet:hover .pet-message {
+  opacity: 1;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+/* Animated Progress Bar */
+.progress-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(
+    90deg,
+    #48bb78 0%,
+    #4299e1 50%,
+    #9f7aea 100%
+  );
+  background-size: 200% 200%;
+  animation: gradientShift 2s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Add new styles for photo indicator */
+.photo-indicator {
+  position: relative;
+  margin: 1.5rem 0;
+  padding: 12px 20px;
+  background: rgba(66, 153, 225, 0.1);
+  border-left: 4px solid #4299e1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.5s ease-out;
+}
+
+.photo-indicator::before {
+  content: '📸';
+  font-size: 1.2rem;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+}
+
+.photo-indicator-text {
+  color: #2b6cb0;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.dark-mode .photo-indicator {
+  background: rgba(66, 153, 225, 0.15);
+  border-color: #63b3ed;
+}
+
+.dark-mode .photo-indicator-text {
+  color: #90cdf4;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* In the output section */
+.output-entry {
+  position: relative;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+}
+
+.output-entry:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+}
+
+.dark-mode .output-entry:not(:last-child)::after {
+  background: linear-gradient(90deg, transparent, #4a5568, transparent);
+}
