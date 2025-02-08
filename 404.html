@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      const path = window.location.pathname;
+      const repo = '/Findalways/';
+      if (path !== repo && path.startsWith(repo)) {
+        window.location.href = repo + '#' + path.slice(repo.length);
+      }
+    </script>
+  </head>
+  <body></body>
+</html> 
