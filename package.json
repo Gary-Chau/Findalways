@@ -1,57 +1,31 @@
 {
-  "name": "momi-formatter",
+  "name": "momi-vue",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://gary-chau.github.io/Findalways/",
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
-    "@fortawesome/fontawesome-free": "^6.4.0",
-    "@mui/material": "^6.4.1",
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "@types/three": "^0.172.0",
-    "canvas-confetti": "^1.9.3",
-    "prop-types": "^15.8.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.28.2",
-    "react-scripts": "5.0.1",
-    "react-spring": "^9.7.5",
-    "three": "^0.172.0",
-    "use-sound": "^4.0.3",
-    "web-vitals": "^2.1.4",
-    "xlsx": "^0.17.0"
-  },
   "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "dependencies": {
+    "@babylonjs/core": "^7.48.3",
+    "@floating-ui/dom": "1.5.1",
+    "@floating-ui/vue": "^1.1.6",
+    "@types/lodash-es": "^4.17.12",
+    "@vueuse/core": "^10.11.1",
+    "animejs": "^3.2.2",
+    "canvas-confetti": "^1.6.0",
+    "lodash-es": "^4.17.21",
+    "nanoid": "^4.0.2",
+    "remeda": "^1.61.0",
+    "vue": "^3.3.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "gh-pages": "^6.3.0"
+    "@types/node": "^18.15.11",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "sass": "1.32.13",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9"
   }
 }
