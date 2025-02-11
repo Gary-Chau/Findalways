@@ -36,8 +36,7 @@ export default defineConfig(({ command, mode }) => {
     build: {
       rollupOptions: {
         input: {
-          main: resolve(__dirname, 'index.html'),
-          minecraft: resolve(__dirname, 'src/components/WebMC/index.html')
+          main: resolve(__dirname, 'index.html')
         }
       }
     },
