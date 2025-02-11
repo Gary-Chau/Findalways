@@ -153,8 +153,13 @@
           <div class="output">
             <div v-for="(entry, index) in formattedData" :key="index" class="output-entry">
               <pre>{{ entry.text }}</pre>
-              <div v-if="entry.hasPhoto" class="photo-indicator">
-                <span class="photo-indicator-text">此投稿包含照片</span>
+              <div v-if="entry.photoLink" class="photo-indicator">
+                <span class="photo-indicator-text">
+                  照片連結: 
+                  <a :href="entry.photoLink" target="_blank" rel="noopener noreferrer">
+                    {{ entry.photoLink }}
+                  </a>
+                </span>
               </div>
             </div>
           </div>
@@ -445,18 +450,22 @@ export default {
           if (!row) continue
 
           const currentNumber = parseInt(startNumber.value) + i
-          let entry = '🐍🐍新年快樂🥰🎆🎆🎆🎆\n\n'
-          entry += `第${currentNumber}位投稿人嚟啦～\n`
+          let entry = `第${currentNumber}位投稿人嚟啦～\n\n`
           entry += `名字：${row[1] || 'N/A'}\n`
           entry += `年齡：${row[2] || 'N/A'}\n`
           entry += `身高：${row[3] || 'N/A'}\n\n`
           entry += `描述自已：${row[4] || 'N/A'}\n\n`
           entry += `要求：${row[5] || 'N/A'}\n\n`
           entry += `聯絡方式：${row[6] || 'N/A'}\n\n`
+
+          if (row[7]) {
+            entry += `照片連結：${row[7]}\n\n`
+          }
+
           entry += '如果有緣人想認識無留tg既投稿人，可以dm平台的！🙊🙊🙊🙊🙊\n'
           entry += '投稿link係主頁🧨大家隨意投稿🎐\n\n'
 
-          newFormattedData.push({ text: entry, hasPhoto: !!row[7] })
+          newFormattedData.push({ text: entry, hasPhoto: !!row[7], photoLink: row[7] || null })
         }
 
         formattedData.value = newFormattedData

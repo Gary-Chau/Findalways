@@ -564,7 +564,7 @@ input[type="file"]::file-selector-button:hover {
   100% { background-position: 0% 50%; }
 }
 
-/* Add new styles for photo indicator */
+/* Update the photo indicator styles */
 .photo-indicator {
   position: relative;
   margin: 1.5rem 0;
@@ -578,25 +578,24 @@ input[type="file"]::file-selector-button:hover {
   animation: slideIn 0.5s ease-out;
 }
 
-.photo-indicator::before {
-  content: '📸';
-  font-size: 1.2rem;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
-}
-
-.photo-indicator-text {
+.photo-indicator a {
   color: #2b6cb0;
+  text-decoration: none;
   font-weight: 500;
-  font-size: 0.95rem;
+  transition: all 0.2s ease;
 }
 
-.dark-mode .photo-indicator {
-  background: rgba(66, 153, 225, 0.15);
-  border-color: #63b3ed;
+.photo-indicator a:hover {
+  color: #1e4e8c;
+  text-decoration: underline;
 }
 
-.dark-mode .photo-indicator-text {
+.dark-mode .photo-indicator a {
   color: #90cdf4;
+}
+
+.dark-mode .photo-indicator a:hover {
+  color: #63b3ed;
 }
 
 @keyframes slideIn {
