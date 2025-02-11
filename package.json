@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "serve:mc": "cd src/components/WebMC && node server.js",
+    "serve:prod": "node prod-server.js"
   },
   "dependencies": {
     "@babylonjs/core": "^7.48.3",
@@ -20,7 +22,8 @@
     "nanoid": "^4.0.2",
     "remeda": "^1.61.0",
     "vue": "^3.3.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "express": "^4.17.1"
   },
   "devDependencies": {
     "@types/node": "^18.15.11",

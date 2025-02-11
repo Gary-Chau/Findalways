@@ -182,6 +182,16 @@
           </span>
           <div class="pet-message">Click me!</div>
         </div>
+
+        <div class="minecraft-section">
+          <button 
+            class="minecraft-btn"
+            @click="handleMinecraftClick"
+          >
+            <i class="fas fa-cube"></i>
+            Play Minecraft
+          </button>
+        </div>
       </div>
     </wrapper-cat-ear>
   </div>
@@ -194,6 +204,7 @@ import confetti from 'canvas-confetti'
 import CursorSidekick from './cursor-sidekick/cursor-sidekick.vue'
 import WrapperCatEar from './wrapper-cat-ear/wrapper-cat-ear.vue'
 import { ActionName } from './wrapper-cat-ear'
+import { MC_SERVER_URL } from '../config'
 
 export default {
   name: 'Momi',
@@ -590,6 +601,10 @@ export default {
       errors.value = { ...errors.value, offset: '' }
     }
 
+    const handleMinecraftClick = () => {
+      window.open('https://gary-chau.github.io/Findalways-MC', '_blank')
+    }
+
     // Progress bar effect
     watch(loading, (newValue) => {
       if (newValue) {
@@ -658,6 +673,7 @@ export default {
       catEarAction,
       catEarMainColor,
       catEarInnerColor,
+      handleMinecraftClick,
     }
   }
 }
@@ -764,5 +780,20 @@ export default {
   width: 100%;
   min-height: 100vh;
   padding: 20px;
+}
+
+.minecraft-btn {
+  background: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.minecraft-btn:hover {
+  background: #45a049;
+  transform: translateY(-2px);
 }
 </style> 
