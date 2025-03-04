@@ -36,8 +36,7 @@ lerna-debug.log*
 .env.*.local
 
 # WebMC specific (since it's hosted separately)
-src/components/WebMC/*
-!src/components/WebMC/WebMCWrapper.vue
+src/components/WebMC/
 Findalways-MC/
 
 # Keep config files

@@ -630,3 +630,56 @@ input[type="file"]::file-selector-button:hover {
 .dark-mode .output-entry:not(:last-child)::after {
   background: linear-gradient(90deg, transparent, #4a5568, transparent);
 }
+
+/* Contact Type Indicator Styles */
+.contact-indicator {
+  position: relative;
+  margin: 1.5rem 0;
+  padding: 12px 20px;
+  background: rgba(72, 187, 120, 0.1);
+  border-left: 4px solid #48bb78;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.5s ease-out;
+}
+
+.contact-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-right: 8px;
+  color: white;
+}
+
+.contact-badge i {
+  margin-right: 5px;
+}
+
+.contact-badge.telegram {
+  background: #0088cc;
+}
+
+.contact-badge.instagram {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+
+.contact-badge.other {
+  background: #718096;
+}
+
+.contact-badge.unidentified {
+  background: #ed8936; /* Orange color to indicate uncertainty */
+}
+
+.contact-badge.both {
+  background: linear-gradient(90deg, #0088cc 0%, #bc1888 100%);
+}
+
+.dark-mode .contact-indicator {
+  background: rgba(72, 187, 120, 0.2);
+}

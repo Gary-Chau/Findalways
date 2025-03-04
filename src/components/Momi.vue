@@ -153,6 +153,27 @@
           <div class="output">
             <div v-for="(entry, index) in formattedData" :key="index" class="output-entry">
               <pre>{{ entry.text }}</pre>
+              
+              <!-- Contact Type Indicator -->
+              <div v-if="entry.hasTG || entry.hasIG || entry.hasUnidentifiedContact" class="contact-indicator">
+                <span class="contact-indicator-text">
+                  聯絡類型: 
+                  <span v-if="entry.hasTG && entry.hasIG" class="contact-badge both">
+                    <i class="fas fa-check-circle"></i> 兩個都有 (TG+IG)
+                  </span>
+                  <span v-else-if="entry.hasTG" class="contact-badge telegram">
+                    <i class="fab fa-telegram"></i> Telegram
+                  </span>
+                  <span v-else-if="entry.hasIG" class="contact-badge instagram">
+                    <i class="fab fa-instagram"></i> Instagram
+                  </span>
+                  <span v-if="entry.hasUnidentifiedContact" class="contact-badge unidentified">
+                    <i class="fas fa-question-circle"></i> IG定TG? 但有資料，你自己去Check 下
+                  </span>
+                </span>
+              </div>
+              
+              <!-- Photo Link Indicator -->
               <div v-if="entry.photoLink" class="photo-indicator">
                 <span class="photo-indicator-text">
                   照片連結: 
@@ -467,7 +488,32 @@ export default {
           entry += `身高：${row[3] || 'N/A'}\n\n`
           entry += `描述自已：${row[4] || 'N/A'}\n\n`
           entry += `要求：${row[5] || 'N/A'}\n\n`
-          entry += `聯絡方式：${row[6] || 'N/A'}\n\n`
+          
+          // Process contact information
+          const contactInfo = row[6] || 'N/A'
+          let hasTG = false
+          let hasIG = false
+          let hasUnidentifiedContact = false
+          
+          // Check for TG/Telegram references
+          if (/tg|telegram|@/i.test(contactInfo)) {
+            hasTG = true
+          }
+          
+          // Check for IG/Instagram references
+          if (/ig|instagram|https:\/\/www\.instagram\.com/i.test(contactInfo)) {
+            hasIG = true
+          }
+          
+          // Check if there's contact info but not recognized as TG or IG
+          if (contactInfo !== 'N/A' && !hasTG && !hasIG) {
+            hasUnidentifiedContact = true
+          }
+          
+          entry += `聯絡方式：${contactInfo}\n\n`
+          
+          // We'll remove the contact type line from the entry text
+          // and display it in the UI instead
 
           if (row[7]) {
             entry += `照片連結：${row[7]}\n\n`
@@ -476,7 +522,15 @@ export default {
           entry += '如果有緣人想認識無留tg既投稿人，可以dm平台的！🙊🙊🙊🙊🙊\n'
           entry += '投稿link係主頁🧨大家隨意投稿🎐\n\n'
 
-          newFormattedData.push({ text: entry, hasPhoto: !!row[7], photoLink: row[7] || null })
+          newFormattedData.push({ 
+            text: entry, 
+            hasPhoto: !!row[7], 
+            photoLink: row[7] || null,
+            hasTG: hasTG,
+            hasIG: hasIG,
+            hasUnidentifiedContact: hasUnidentifiedContact,
+            contactInfo: contactInfo
+          })
         }
 
         formattedData.value = newFormattedData

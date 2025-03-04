@@ -43,13 +43,6 @@ export default defineConfig(({ command, mode }) => {
     server: {
       fs: {
         strict: false
-      },
-      proxy: {
-        // Proxy /minecraft to local MC server during development
-        '/minecraft': {
-          target: 'http://localhost:3000',
-          changeOrigin: true
-        }
       }
     }
   }
