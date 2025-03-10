@@ -173,6 +173,36 @@
                 </span>
               </div>
               
+              <!-- Post IG Indicator -->
+              <div v-if="entry.needPostIG !== undefined" class="post-ig-indicator">
+                <span class="post-indicator-text">
+                  需要po埋上ig嗎: 
+                  <span v-if="entry.needPostIG" class="post-badge need">
+                    <i class="fas fa-check"></i> 需要
+                  </span>
+                  <span v-else class="post-badge dont-need">
+                    <i class="fas fa-times"></i> 不需要
+                  </span>
+                </span>
+              </div>
+              
+              <!-- TG Contact Indicator with Copy Button -->
+              <div v-if="entry.tgContactInfo && entry.tgContactInfo !== 'N/A'" class="tg-contact-indicator">
+                <span class="tg-contact-indicator-text">
+                  TG聯絡方式: 
+                  <span class="tg-badge">
+                    <i class="fab fa-telegram"></i> {{ entry.tgContactInfo }}
+                  </span>
+                  <button 
+                    class="tg-copy-btn" 
+                    @click="copyTgAccount(entry.tgContactInfo)"
+                    title="複製TG帳號"
+                  >
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </span>
+              </div>
+              
               <!-- Photo Link Indicator -->
               <div v-if="entry.photoLink" class="photo-indicator">
                 <span class="photo-indicator-text">
@@ -512,13 +542,23 @@ export default {
           
           entry += `聯絡方式：${contactInfo}\n\n`
           
-          // We'll remove the contact type line from the entry text
-          // and display it in the UI instead
-
+          // Add photo link if available
           if (row[7]) {
             entry += `照片連結：${row[7]}\n\n`
           }
-
+          
+          // Check row 8: Need to post IG?
+          const needPostIG = row[8] === '需要' ? true : false
+          
+          // Check row 9: TG contact info with cleanup
+          let tgContactInfo = row[9] || 'N/A'
+          
+          // Clean TG contact info by removing prefixes
+          if (tgContactInfo !== 'N/A') {
+            // Remove common prefixes like "Tg:", "/tg:", etc.
+            tgContactInfo = tgContactInfo.replace(/^(tg|telegram)[\s:]*\/?/i, '').trim()
+          }
+          
           entry += '如果有緣人想認識無留tg既投稿人，可以dm平台的！🙊🙊🙊🙊🙊\n'
           entry += '投稿link係主頁🧨大家隨意投稿🎐\n\n'
 
@@ -529,7 +569,9 @@ export default {
             hasTG: hasTG,
             hasIG: hasIG,
             hasUnidentifiedContact: hasUnidentifiedContact,
-            contactInfo: contactInfo
+            contactInfo: contactInfo,
+            needPostIG: needPostIG,
+            tgContactInfo: tgContactInfo
           })
         }
 
@@ -659,6 +701,16 @@ export default {
       window.open('https://gary-chau.github.io/Findalways-MC', '_blank')
     }
 
+    const copyTgAccount = async (tgAccount) => {
+      try {
+        await navigator.clipboard.writeText(tgAccount)
+        successMessage.value = `已複製TG帳號: ${tgAccount}`
+        setTimeout(() => successMessage.value = '', 3000)
+      } catch (err) {
+        errors.value = { clipboard: '複製失敗，請手動複製。' }
+      }
+    }
+
     // Progress bar effect
     watch(loading, (newValue) => {
       if (newValue) {
@@ -728,6 +780,7 @@ export default {
       catEarMainColor,
       catEarInnerColor,
       handleMinecraftClick,
+      copyTgAccount
     }
   }
 }
@@ -849,5 +902,216 @@ export default {
 .minecraft-btn:hover {
   background: #45a049;
   transform: translateY(-2px);
+}
+
+.post-ig-indicator, .tg-contact-indicator, .photo-indicator {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border-left: 4px solid;
+}
+
+.post-ig-indicator {
+  background: linear-gradient(135deg, rgba(237, 242, 247, 0.9), rgba(226, 232, 240, 0.9));
+  border-left-color: #805ad5; /* Purple */
+}
+
+.tg-contact-indicator {
+  background: linear-gradient(135deg, rgba(235, 244, 255, 0.9), rgba(226, 236, 253, 0.9));
+  border-left-color: #0088cc; /* Telegram blue */
+}
+
+.photo-indicator {
+  background: linear-gradient(135deg, rgba(240, 255, 244, 0.9), rgba(226, 245, 232, 0.9));
+  border-left-color: #48bb78; /* Green */
+}
+
+.post-ig-indicator:hover, .tg-contact-indicator:hover, .photo-indicator:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.post-indicator-text::before {
+  content: "📱 ";
+  margin-right: 3px;
+}
+
+.tg-contact-indicator-text::before {
+  content: "💬 ";
+  margin-right: 3px;
+}
+
+.photo-indicator-text::before {
+  content: "📷 ";
+  margin-right: 3px;
+}
+
+.post-badge, .tg-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.post-badge:hover, .tg-badge:hover {
+  transform: scale(1.05);
+}
+
+.post-badge.need {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  color: white;
+}
+
+.post-badge.dont-need {
+  background: linear-gradient(135deg, #fc8181, #f56565);
+  color: white;
+}
+
+.tg-badge {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+}
+
+.photo-indicator a {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #38b2ac, #319795);
+  color: white;
+  text-decoration: none;
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+  white-space: nowrap;
+}
+
+.photo-indicator a:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode adjustments */
+.dark-mode .post-ig-indicator {
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.9), rgba(26, 32, 44, 0.9));
+  color: #e2e8f0;
+}
+
+.dark-mode .tg-contact-indicator {
+  background: linear-gradient(135deg, rgba(44, 55, 76, 0.9), rgba(26, 36, 55, 0.9));
+  color: #e2e8f0;
+}
+
+.dark-mode .photo-indicator {
+  background: linear-gradient(135deg, rgba(40, 54, 47, 0.9), rgba(25, 34, 30, 0.9));
+  color: #e2e8f0;
+}
+
+.dark-mode .photo-indicator a {
+  background: linear-gradient(135deg, #2c7a7b, #285e61);
+  color: white;
+}
+
+/* Make contact indicators match the new style */
+.contact-indicator {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(255, 244, 230, 0.9), rgba(254, 235, 200, 0.9));
+  border-radius: 10px;
+  font-size: 0.95rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border-left: 4px solid #ed8936; /* Orange */
+}
+
+.contact-indicator:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.contact-indicator-text::before {
+  content: "📲 ";
+  margin-right: 3px;
+}
+
+.dark-mode .contact-indicator {
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.9), rgba(26, 32, 44, 0.9));
+  color: #e2e8f0;
+}
+
+.contact-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.contact-badge:hover {
+  transform: scale(1.05);
+}
+
+.contact-badge.both {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.contact-badge.telegram {
+  background: linear-gradient(135deg, #0088cc, #0099ff);
+  color: white;
+}
+
+.contact-badge.instagram {
+  background: linear-gradient(135deg, #fd5949, #d6249f, #285AEB);
+  color: white;
+}
+
+.contact-badge.unidentified {
+  background: linear-gradient(135deg, #f6ad55, #ed8936);
+  color: white;
+}
+
+.tg-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #a3bffa, #7f9cf5);
+  color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.tg-copy-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #7f9cf5, #667eea);
+}
+
+.tg-copy-btn:active {
+  transform: scale(0.95);
+}
+
+.tg-copy-btn i {
+  font-size: 14px;
 }
 </style> 
