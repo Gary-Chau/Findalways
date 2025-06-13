@@ -229,22 +229,63 @@
                     聯絡類型
                   </div>
                   <div class="indicator-content">
-                    <span v-if="entry.hasTG && entry.hasIG" class="contact-badge both">
-                      <i class="fas fa-check-circle"></i>
-                      TG + IG
-                    </span>
-                    <span v-else-if="entry.hasTG" class="contact-badge telegram">
-                      <i class="fab fa-telegram"></i>
-                      Telegram
-                    </span>
-                    <span v-else-if="entry.hasIG" class="contact-badge instagram">
-                      <i class="fab fa-instagram"></i>
-                      Instagram
-                    </span>
-                    <span v-if="entry.hasUnidentifiedContact" class="contact-badge unidentified">
-                      <i class="fas fa-question-circle"></i>
-                      待確認
-                    </span>
+                    <div v-if="entry.hasTG && entry.tgHandle" class="contact-item">
+                      <span class="contact-label">
+                        <i class="fab fa-telegram"></i>
+                        Telegram:
+                      </span>
+                      <a 
+                        :href="`https://t.me/${entry.tgHandle}`" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="contact-link telegram-link"
+                      >
+                        @{{ entry.tgHandle }}
+                      </a>
+                    </div>
+                    <div v-if="entry.hasIG && entry.igHandle" class="contact-item">
+                      <span class="contact-label">
+                        <i class="fab fa-instagram"></i>
+                        Instagram:
+                      </span>
+                      <a 
+                        :href="`https://www.instagram.com/${entry.igHandle}`" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="contact-link instagram-link"
+                      >
+                        @{{ entry.igHandle }}
+                      </a>
+                    </div>
+                    <div v-if="entry.hasTG && !entry.tgHandle" class="contact-item">
+                      <span class="contact-label">
+                        <i class="fab fa-telegram"></i>
+                        Telegram:
+                      </span>
+                      <span class="contact-badge telegram">
+                        {{ entry.contactInfo }} (解析失敗)
+                      </span>
+                    </div>
+                    <div v-if="entry.hasIG && !entry.igHandle" class="contact-item">
+                      <span class="contact-label">
+                        <i class="fab fa-instagram"></i>
+                        Instagram:
+                      </span>
+                      <a 
+                        :href="`https://www.instagram.com/${entry.contactInfo.replace(/\s*\(ig\)/i, '').trim()}`" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="contact-link instagram-link"
+                      >
+                        {{ entry.contactInfo }} (嘗試連接)
+                      </a>
+                    </div>
+                    <div v-if="entry.hasUnidentifiedContact" class="contact-item">
+                      <span class="contact-badge unidentified">
+                        <i class="fas fa-question-circle"></i>
+                        待確認: {{ entry.contactInfo }}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
@@ -641,36 +682,62 @@ export default {
           entry += `描述自已：${row[5] || 'N/A'}\n\n`
           entry += `要求：${row[6] || 'N/A'}\n\n`
           
-          // Process contact information
+          // Process contact information - but don't include in text
           const contactInfo = row[7] || 'N/A'
           let hasTG = false
           let hasIG = false
           let hasUnidentifiedContact = false
+          let tgHandle = null
+          let igHandle = null
           
-          // Check for TG/Telegram references
-          if (/tg|telegram|@/i.test(contactInfo)) {
-            hasTG = true
+          if (contactInfo !== 'N/A') {
+            // Parse TG/Telegram first
+            if (/tg|telegram|@/i.test(contactInfo)) {
+              hasTG = true
+              // Extract TG handle - look for @username pattern
+              const tgMatch = contactInfo.match(/@([a-zA-Z0-9_]+)/i)
+              if (tgMatch) {
+                tgHandle = tgMatch[1] // Just the username without @
+              } else {
+                // Fallback: try to extract after "TG:" or "Telegram:"
+                const tgFallback = contactInfo.match(/(?:tg|telegram):\s*@?([^\s\n]+)/i)
+                if (tgFallback) {
+                  tgHandle = tgFallback[1].replace('@', '')
+                }
+              }
+            }
+            
+            // Parse IG/Instagram
+            else if (/\(ig\)|ig\)|instagram|https:\/\/www\.instagram\.com/i.test(contactInfo)) {
+              hasIG = true
+              // Extract IG handle from different formats
+              const igUrlMatch = contactInfo.match(/instagram\.com\/([a-zA-Z0-9_\.]+)/i)
+              const igParenMatch = contactInfo.match(/([a-zA-Z0-9_\.]+)\s*\(ig\)/i) // "username (IG)"
+              const igDirectMatch = contactInfo.match(/(?:ig|instagram):\s*@?([a-zA-Z0-9_\.]+)/i)
+              
+              if (igUrlMatch) {
+                igHandle = igUrlMatch[1]
+              } else if (igParenMatch) {
+                igHandle = igParenMatch[1]
+              } else if (igDirectMatch) {
+                igHandle = igDirectMatch[1]
+              }
+            }
+            
+            // Default to IG if no specific platform detected and looks like a username
+            else if (/^[a-zA-Z0-9_\.]+$/.test(contactInfo.trim())) {
+              hasIG = true
+              igHandle = contactInfo.trim()
+            }
+            
+            // Unidentified contact (like WhatsApp, other platforms)
+            else {
+              hasUnidentifiedContact = true
+            }
           }
           
-          // Check for IG/Instagram references
-          if (/ig|instagram|https:\/\/www\.instagram\.com/i.test(contactInfo)) {
-            hasIG = true
-          }
-          
-          // Check if there's contact info but not recognized as TG or IG
-          if (contactInfo !== 'N/A' && !hasTG && !hasIG) {
-            hasUnidentifiedContact = true
-          }
-          
-          entry += `聯絡方式：${contactInfo}\n\n`
-          
-          // Get actual photo link data (not header)
+          // Get actual photo link data (not header) - but don't include in text
           const photoLink = row[8] && row[8] !== '照片連結' ? row[8] : null
-          
-          // Add photo link if available and not a header
-          if (photoLink) {
-            entry += `照片連結：${photoLink}\n\n`
-          }
           
           // Check row 9: Need to post Threads?
           const needPostThreads = row[9] === '需要' ? true : false
@@ -690,6 +757,8 @@ export default {
             hasIG: hasIG,
             hasUnidentifiedContact: hasUnidentifiedContact,
             contactInfo: contactInfo,
+            tgHandle: tgHandle,
+            igHandle: igHandle,
             needPostThreads: needPostThreads,
             needPostIG: needPostIG
           })
@@ -1204,6 +1273,59 @@ export default {
 .contact-badge.unidentified {
   background: linear-gradient(135deg, #f6ad55, #ed8936);
   color: white;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.contact-item:last-child {
+  margin-bottom: 0;
+}
+
+.contact-label {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  min-width: 100px;
+  gap: 6px;
+}
+
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.contact-link:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.telegram-link {
+  background: linear-gradient(135deg, #0088cc, #0099ff);
+  color: white;
+}
+
+.telegram-link:hover {
+  background: linear-gradient(135deg, #006ba8, #0088cc);
+}
+
+.instagram-link {
+  background: linear-gradient(135deg, #fd5949, #d6249f, #285AEB);
+  color: white;
+}
+
+.instagram-link:hover {
+  background: linear-gradient(135deg, #e44c3c, #b8208a, #2048c7);
 }
 
 .app-container {
