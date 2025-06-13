@@ -1,225 +1,323 @@
 <template>
-  <div :class="['container', { 'dark-mode': darkMode }]">
+  <div :class="['app-container', { 'dark-mode': darkMode }]">
     <wrapper-cat-ear
       :action="catEarAction"
       :main-color="catEarMainColor"
       :inner-color="catEarInnerColor"
     >
-      <div class="content-wrapper">
-        <div class="cursor-sidekick-container">
-          <cursor-sidekick
-            :size="48"
-            color="#4299e1"
-            :max-velocity="2"
-            :z-index="100"
-            :active-providers="activeProviders"
-            :hover-providers="hoverProviders"
-            :select-providers="selectProviders"
-          />
+      <!-- Cursor Sidekick -->
+      <div class="cursor-sidekick-container">
+        <cursor-sidekick
+          :size="48"
+          color="#4299e1"
+          :max-velocity="2"
+          :z-index="100"
+          :active-providers="activeProviders"
+          :hover-providers="hoverProviders"
+          :select-providers="selectProviders"
+        />
+      </div>
+
+      <!-- Theme Toggle -->
+      <transition name="rotate">
+        <div class="theme-toggle" @click="darkMode = !darkMode">
+          {{ darkMode ? '🌞' : '🌙' }}
+        </div>
+      </transition>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Header Section -->
+        <div class="header-section">
+          <div class="header-content">
+            <h1 class="main-title">
+              <span class="title-icon">💝</span>
+              Excel 處理小精靈
+              <span class="title-icon">✨</span>
+            </h1>
+                         <p class="subtitle">
+               Momi Excel Processor
+             </p>
+          </div>
         </div>
 
-        <transition name="rotate">
+        <!-- Upload Section -->
+        <div class="section-card upload-section">
+          <div class="section-header">
+            <h2>
+              <span class="section-icon">📁</span>
+              上傳檔案
+            </h2>
+            <p class="section-desc">選擇你的Excel檔案開始處理吧～</p>
+          </div>
+          
           <div 
-            class="theme-toggle" 
-            @click="darkMode = !darkMode"
+            :class="['drop-zone', { 'drop-active': dragActive }]"
+            @dragenter="handleDrag"
+            @dragleave="handleDrag"
+            @dragover="handleDrag"
+            @drop="handleDrop"
           >
-            {{ darkMode ? '🌞' : '🌙' }}
-          </div>
-        </transition>
-
-        <div v-if="showPreview" class="preview-modal">
-          <div class="preview-content">
-            <h3>檔案預覽 <i class="fas fa-table"></i></h3>
-            <table>
-              <tbody>
-                <tr v-for="(row, i) in previewData" :key="i">
-                  <td v-for="(cell, j) in row" :key="j">{{ cell }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <button 
-              class="close-preview"
-              @click="showPreview = false"
-            >
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-
-        <button
-          class="preview-btn"
-          @click="handlePreview"
-          :disabled="!fileInput?.files?.length"
-        >
-          <i class="fas fa-eye"></i>
-          預覽檔案
-        </button>
-
-        <div 
-          :class="['drop-zone', { active: dragActive }]"
-          @dragenter="handleDrag"
-          @dragleave="handleDrag"
-          @dragover="handleDrag"
-          @drop="handleDrop"
-        >
-          <div class="input-group">
-            <label>
-              <i class="fas fa-file-excel button-icon"></i>
-              選擇 Excel 檔案
-            </label>
-            <input 
-              type="file" 
-              ref="fileInput"
-              accept=".xlsx, .xls"
-              @change="clearFileError"
-            />
+            <div class="drop-zone-content">
+              <div class="drop-icon">📤</div>
+              <div class="drop-text">
+                <span v-if="dragActive" class="drag-active-text">
+                  放開來上傳檔案 🎯
+                </span>
+                <span v-else>
+                  拖拽Excel檔案到這裡<br>
+                  或者點擊選擇檔案
+                </span>
+              </div>
+              <input 
+                type="file" 
+                ref="fileInput"
+                accept=".xlsx, .xls"
+                @change="clearFileError"
+                class="file-input"
+              />
+              <button class="browse-btn" @click="fileInput?.click()">
+                <i class="fas fa-file-excel"></i>
+                選擇檔案
+              </button>
+            </div>
             <div v-if="errors.file" class="error-message">
               <i class="fas fa-exclamation-circle"></i>
               {{ errors.file }}
             </div>
           </div>
-        </div>
 
-        <div class="input-group">
-          <label>
-            <i class="fas fa-sort-numeric-down button-icon"></i>
-            起始數字
-          </label>
-          <input
-            type="number"
-            v-model="startNumber"
-            @input="clearStartNumberError"
-            placeholder="請輸入起始數字"
-          />
-          <div v-if="errors.startNumber" class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
-            {{ errors.startNumber }}
-          </div>
-        </div>
-
-        <div class="input-group">
-          <label>
-            <i class="fas fa-arrows-alt-v button-icon"></i>
-            偏移值
-          </label>
-          <input
-            type="number"
-            v-model="offset"
-            @input="clearOffsetError"
-            placeholder="請輸入偏移值"
-          />
-          <div v-if="errors.offset" class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
-            {{ errors.offset }}
-          </div>
-        </div>
-
-        <button 
-          class="process-btn" 
-          @click="handleProcess" 
-          :disabled="loading"
-        >
-          <i :class="['fas', loading ? 'fa-spinner fa-spin' : 'fa-file-import', 'button-icon']"></i>
-          {{ loading ? '處理中...' : '處理檔案' }}
-        </button>
-
-        <div v-if="loading" class="progress-bar">
-          <div 
-            class="progress-bar-fill" 
-            :style="{ width: `${progress}%` }"
-          ></div>
-        </div>
-
-        <div v-if="successMessage" class="success-message">
-          <i class="fas fa-party-horn"></i>
-          {{ successMessage }}
-          <span class="celebrate-emoji">🎉</span>
-        </div>
-
-        <div v-if="formattedData.length > 0" ref="output">
-          <div class="output-header">
-            <h3>
-              <i class="fas fa-file-alt button-icon"></i>
-              處理結果
-            </h3>
-            <button 
-              class="copy-btn"
-              @click="handleCopyToClipboard"
-              title="複製到剪貼板"
-            >
-              <i class="fas fa-copy"></i>
-            </button>
-          </div>
-          <div class="output">
-            <div v-for="(entry, index) in formattedData" :key="index" class="output-entry">
-              <pre>{{ entry.text }}</pre>
-              
-              <!-- Contact Type Indicator -->
-              <div v-if="entry.hasTG || entry.hasIG || entry.hasUnidentifiedContact" class="contact-indicator">
-                <span class="contact-indicator-text">
-                  聯絡類型: 
-                  <span v-if="entry.hasTG && entry.hasIG" class="contact-badge both">
-                    <i class="fas fa-check-circle"></i> 兩個都有 (TG+IG)
-                  </span>
-                  <span v-else-if="entry.hasTG" class="contact-badge telegram">
-                    <i class="fab fa-telegram"></i> Telegram
-                  </span>
-                  <span v-else-if="entry.hasIG" class="contact-badge instagram">
-                    <i class="fab fa-instagram"></i> Instagram
-                  </span>
-                  <span v-if="entry.hasUnidentifiedContact" class="contact-badge unidentified">
-                    <i class="fas fa-question-circle"></i> IG定TG? 但有資料，你自己去Check 下
-                  </span>
-                </span>
-              </div>
-              
-              <!-- Post IG Indicator -->
-              <div v-if="entry.needPostIG !== undefined" class="post-ig-indicator">
-                <span class="post-indicator-text">
-                  需要po埋上ig嗎: 
-                  <span v-if="entry.needPostIG" class="post-badge need">
-                    <i class="fas fa-check"></i> 需要
-                  </span>
-                  <span v-else class="post-badge dont-need">
-                    <i class="fas fa-times"></i> 不需要
-                  </span>
-                </span>
-              </div>
-              
-              <!-- TG Contact Indicator with Copy Button -->
-              <div v-if="entry.tgContactInfo && entry.tgContactInfo !== 'N/A'" class="tg-contact-indicator">
-                <span class="tg-contact-indicator-text">
-                  TG聯絡方式: 
-                  <span class="tg-badge">
-                    <i class="fab fa-telegram"></i> {{ entry.tgContactInfo }}
-                  </span>
-                  <button 
-                    class="tg-copy-btn" 
-                    @click="copyTgAccount(entry.tgContactInfo)"
-                    title="複製TG帳號"
-                  >
-                    <i class="fas fa-copy"></i>
-                  </button>
-                </span>
-              </div>
-              
-              <!-- Photo Link Indicator -->
-              <div v-if="entry.photoLink" class="photo-indicator">
-                <span class="photo-indicator-text">
-                  照片連結: 
-                  <a :href="entry.photoLink" target="_blank" rel="noopener noreferrer">
-                    {{ entry.photoLink }}
-                  </a>
-                </span>
-              </div>
-            </div>
-          </div>
-          <button class="download-btn" @click="handleDownload">
-            <i class="fas fa-download button-icon"></i>
-            下載檔案
+          <button
+            class="preview-btn"
+            @click="handlePreview"
+            :disabled="!fileInput?.files?.length"
+          >
+            <i class="fas fa-eye"></i>
+            預覽檔案內容
           </button>
         </div>
 
+        <!-- Settings Section -->
+        <div class="section-card settings-section">
+          <div class="section-header">
+            <h2>
+              <span class="section-icon">⚙️</span>
+              處理設定
+            </h2>
+            <p class="section-desc">設定你的處理參數</p>
+          </div>
+          
+          <div class="settings-grid">
+            <div class="input-card">
+              <label class="input-label">
+                <span class="label-icon">🔢</span>
+                起始數字
+              </label>
+              <input
+                type="number"
+                v-model="startNumber"
+                @input="clearStartNumberError"
+                placeholder="請輸入起始數字"
+                class="cute-input"
+              />
+              <div v-if="errors.startNumber" class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ errors.startNumber }}
+              </div>
+            </div>
+            
+            <div class="input-card">
+              <label class="input-label">
+                <span class="label-icon">📏</span>
+                偏移值
+              </label>
+              <input
+                type="number"
+                v-model="offset"
+                @input="clearOffsetError"
+                placeholder="請輸入偏移值"
+                class="cute-input"
+              />
+              <div v-if="errors.offset" class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ errors.offset }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Section -->
+        <div class="section-card action-section">
+          <button 
+            class="process-btn" 
+            @click="handleProcess" 
+            :disabled="loading"
+          >
+            <span class="btn-content">
+              <i :class="['btn-icon', loading ? 'fas fa-spinner fa-spin' : 'fas fa-magic']"></i>
+              <span class="btn-text">{{ loading ? '處理中...' : '開始處理' }}</span>
+            </span>
+          </button>
+
+          <div v-if="loading" class="progress-container">
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                :style="{ width: `${progress}%` }"
+              ></div>
+            </div>
+            <div class="progress-text">{{ progress }}%</div>
+          </div>
+        </div>
+
+        <!-- Success Message -->
+        <transition name="bounce">
+          <div v-if="successMessage" class="success-card">
+            <div class="success-content">
+              <i class="fas fa-check-circle success-icon"></i>
+              <span class="success-text">{{ successMessage }}</span>
+              <span class="success-emoji">🎉</span>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Results Section -->
+        <transition name="slide-up">
+          <div v-if="formattedData.length > 0" class="section-card results-section" ref="output">
+            <div class="section-header">
+              <h2>
+                <span class="section-icon">📋</span>
+                處理結果
+              </h2>
+              <div class="result-actions">
+                <button class="action-btn copy-btn" @click="handleCopyToClipboard">
+                  <i class="fas fa-copy"></i>
+                  複製全部
+                </button>
+                <button class="action-btn download-btn" @click="handleDownload">
+                  <i class="fas fa-download"></i>
+                  下載檔案
+                </button>
+              </div>
+            </div>
+            
+            <div class="results-container">
+              <div v-for="(entry, index) in formattedData" :key="index" class="result-card">
+                <div class="result-header">
+                  <span class="result-number">第{{ parseInt(startNumber) + index }}位</span>
+                  <div class="result-badges">
+                    <span v-if="entry.hasPhoto" class="badge photo-badge">
+                      <i class="fas fa-camera"></i>
+                      有照片
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="result-content">
+                  <pre class="result-text">{{ entry.text }}</pre>
+                </div>
+                
+                <!-- Contact Type Indicator -->
+                <div v-if="entry.hasTG || entry.hasIG || entry.hasUnidentifiedContact" class="indicator-card contact-indicator">
+                  <div class="indicator-header">
+                    <i class="fas fa-address-book"></i>
+                    聯絡類型
+                  </div>
+                  <div class="indicator-content">
+                    <span v-if="entry.hasTG && entry.hasIG" class="contact-badge both">
+                      <i class="fas fa-check-circle"></i>
+                      TG + IG
+                    </span>
+                    <span v-else-if="entry.hasTG" class="contact-badge telegram">
+                      <i class="fab fa-telegram"></i>
+                      Telegram
+                    </span>
+                    <span v-else-if="entry.hasIG" class="contact-badge instagram">
+                      <i class="fab fa-instagram"></i>
+                      Instagram
+                    </span>
+                    <span v-if="entry.hasUnidentifiedContact" class="contact-badge unidentified">
+                      <i class="fas fa-question-circle"></i>
+                      待確認
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Post Threads Indicator -->
+                <div v-if="entry.needPostThreads !== undefined" class="indicator-card threads-indicator">
+                  <div class="indicator-header">
+                    <i class="fas fa-layer-group"></i>
+                    Threads發布
+                  </div>
+                  <div class="indicator-content">
+                    <span :class="['post-badge', entry.needPostThreads ? 'need' : 'dont-need']">
+                      <i :class="['fas', entry.needPostThreads ? 'fa-check' : 'fa-times']"></i>
+                      {{ entry.needPostThreads ? '需要' : '不需要' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Post IG Indicator -->
+                <div v-if="entry.needPostIG !== undefined" class="indicator-card ig-indicator">
+                  <div class="indicator-header">
+                    <i class="fab fa-instagram"></i>
+                    IG發布
+                  </div>
+                  <div class="indicator-content">
+                    <span :class="['post-badge', entry.needPostIG ? 'need' : 'dont-need']">
+                      <i :class="['fas', entry.needPostIG ? 'fa-check' : 'fa-times']"></i>
+                      {{ entry.needPostIG ? '需要' : '不需要' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Photo Link -->
+                <div v-if="entry.photoLink" class="indicator-card photo-indicator">
+                  <div class="indicator-header">
+                    <i class="fas fa-image"></i>
+                    照片連結
+                  </div>
+                  <div class="indicator-content">
+                    <a :href="entry.photoLink" target="_blank" rel="noopener noreferrer" class="photo-link">
+                      <i class="fas fa-external-link-alt"></i>
+                      查看照片
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Preview Modal -->
+        <transition name="modal">
+          <div v-if="showPreview" class="modal-overlay" @click="showPreview = false">
+            <div class="modal-content" @click.stop>
+              <div class="modal-header">
+                <h3>
+                  <i class="fas fa-table"></i>
+                  檔案預覽
+                </h3>
+                <button class="modal-close" @click="showPreview = false">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div class="preview-table-container">
+                  <table class="preview-table">
+                    <tbody>
+                      <tr v-for="(row, i) in previewData" :key="i">
+                        <td v-for="(cell, j) in row" :key="j">{{ cell }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Virtual Pet -->
         <div 
           class="virtual-pet"
           :style="{
@@ -228,19 +326,17 @@
           }"
           @click="handlePetInteraction"
         >
-          <span role="img" aria-label="pet">
-            {{ getPetEmoji }}
-          </span>
-          <div class="pet-message">Click me!</div>
+          <div class="pet-container">
+            <span class="pet-emoji">{{ getPetEmoji }}</span>
+            <div class="pet-message">點我！</div>
+          </div>
         </div>
 
-        <div class="minecraft-section">
-          <button 
-            class="minecraft-btn"
-            @click="handleMinecraftClick"
-          >
+        <!-- Minecraft Section -->
+        <div class="footer-section">
+          <button class="minecraft-btn" @click="handleMinecraftClick">
             <i class="fas fa-cube"></i>
-            Play Minecraft
+            <span>Play Minecraft</span>
           </button>
         </div>
       </div>
@@ -514,13 +610,14 @@ export default {
           const currentNumber = parseInt(startNumber.value) + i
           let entry = `第${currentNumber}位投稿人嚟啦～\n\n`
           entry += `名字：${row[1] || 'N/A'}\n`
-          entry += `年齡：${row[2] || 'N/A'}\n`
-          entry += `身高：${row[3] || 'N/A'}\n\n`
-          entry += `描述自已：${row[4] || 'N/A'}\n\n`
-          entry += `要求：${row[5] || 'N/A'}\n\n`
+          entry += `性別：${row[2] || 'N/A'}\n`
+          entry += `年齡：${row[3] || 'N/A'}\n`
+          entry += `身高：${row[4] || 'N/A'}\n\n`
+          entry += `描述自已：${row[5] || 'N/A'}\n\n`
+          entry += `要求：${row[6] || 'N/A'}\n\n`
           
           // Process contact information
-          const contactInfo = row[6] || 'N/A'
+          const contactInfo = row[7] || 'N/A'
           let hasTG = false
           let hasIG = false
           let hasUnidentifiedContact = false
@@ -543,35 +640,30 @@ export default {
           entry += `聯絡方式：${contactInfo}\n\n`
           
           // Add photo link if available
-          if (row[7]) {
-            entry += `照片連結：${row[7]}\n\n`
+          if (row[8]) {
+            entry += `照片連結：${row[8]}\n\n`
           }
           
-          // Check row 8: Need to post IG?
-          const needPostIG = row[8] === '需要' ? true : false
+          // Check row 9: Need to post Threads?
+          const needPostThreads = row[9] === '需要' ? true : false
           
-          // Check row 9: TG contact info with cleanup
-          let tgContactInfo = row[9] || 'N/A'
-          
-          // Clean TG contact info by removing prefixes
-          if (tgContactInfo !== 'N/A') {
-            // Remove common prefixes like "Tg:", "/tg:", etc.
-            tgContactInfo = tgContactInfo.replace(/^(tg|telegram)[\s:]*\/?/i, '').trim()
-          }
+          // Check row 10: Need to post IG?
+          const needPostIG = row[10] === '需要' ? true : false
           
           entry += '如果有緣人想認識無留tg既投稿人，可以dm平台的！🙊🙊🙊🙊🙊\n'
+          entry += '若想投稿歡迎填form💕 有任何問題、無聊都歡迎搵平台詢問傾計呀～！🥰✨\n'
           entry += '投稿link係主頁🧨大家隨意投稿🎐\n\n'
 
           newFormattedData.push({ 
             text: entry, 
-            hasPhoto: !!row[7], 
-            photoLink: row[7] || null,
+            hasPhoto: !!row[8], 
+            photoLink: row[8] || null,
             hasTG: hasTG,
             hasIG: hasIG,
             hasUnidentifiedContact: hasUnidentifiedContact,
             contactInfo: contactInfo,
-            needPostIG: needPostIG,
-            tgContactInfo: tgContactInfo
+            needPostThreads: needPostThreads,
+            needPostIG: needPostIG
           })
         }
 
@@ -701,16 +793,6 @@ export default {
       window.open('https://gary-chau.github.io/Findalways-MC', '_blank')
     }
 
-    const copyTgAccount = async (tgAccount) => {
-      try {
-        await navigator.clipboard.writeText(tgAccount)
-        successMessage.value = `已複製TG帳號: ${tgAccount}`
-        setTimeout(() => successMessage.value = '', 3000)
-      } catch (err) {
-        errors.value = { clipboard: '複製失敗，請手動複製。' }
-      }
-    }
-
     // Progress bar effect
     watch(loading, (newValue) => {
       if (newValue) {
@@ -779,8 +861,7 @@ export default {
       catEarAction,
       catEarMainColor,
       catEarInnerColor,
-      handleMinecraftClick,
-      copyTgAccount
+      handleMinecraftClick
     }
   }
 }
@@ -904,7 +985,7 @@ export default {
   transform: translateY(-2px);
 }
 
-.post-ig-indicator, .tg-contact-indicator, .photo-indicator {
+.post-threads-indicator, .post-ig-indicator, .photo-indicator {
   margin-top: 8px;
   padding: 8px 12px;
   border-radius: 10px;
@@ -914,14 +995,14 @@ export default {
   border-left: 4px solid;
 }
 
+.post-threads-indicator {
+  background: linear-gradient(135deg, rgba(247, 235, 255, 0.9), rgba(237, 224, 250, 0.9));
+  border-left-color: #9f7aea; /* Purple for threads */
+}
+
 .post-ig-indicator {
   background: linear-gradient(135deg, rgba(237, 242, 247, 0.9), rgba(226, 232, 240, 0.9));
   border-left-color: #805ad5; /* Purple */
-}
-
-.tg-contact-indicator {
-  background: linear-gradient(135deg, rgba(235, 244, 255, 0.9), rgba(226, 236, 253, 0.9));
-  border-left-color: #0088cc; /* Telegram blue */
 }
 
 .photo-indicator {
@@ -929,18 +1010,18 @@ export default {
   border-left-color: #48bb78; /* Green */
 }
 
-.post-ig-indicator:hover, .tg-contact-indicator:hover, .photo-indicator:hover {
+.post-threads-indicator:hover, .post-ig-indicator:hover, .photo-indicator:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
 }
 
-.post-indicator-text::before {
-  content: "📱 ";
+.post-threads-indicator-text::before {
+  content: "🧵 ";
   margin-right: 3px;
 }
 
-.tg-contact-indicator-text::before {
-  content: "💬 ";
+.post-indicator-text::before {
+  content: "📱 ";
   margin-right: 3px;
 }
 
@@ -949,7 +1030,7 @@ export default {
   margin-right: 3px;
 }
 
-.post-badge, .tg-badge {
+.post-badge {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
@@ -960,7 +1041,7 @@ export default {
   transition: all 0.2s ease;
 }
 
-.post-badge:hover, .tg-badge:hover {
+.post-badge:hover {
   transform: scale(1.05);
 }
 
@@ -971,11 +1052,6 @@ export default {
 
 .post-badge.dont-need {
   background: linear-gradient(135deg, #fc8181, #f56565);
-  color: white;
-}
-
-.tg-badge {
-  background: linear-gradient(135deg, #4299e1, #3182ce);
   color: white;
 }
 
@@ -1002,13 +1078,13 @@ export default {
 }
 
 /* Dark mode adjustments */
-.dark-mode .post-ig-indicator {
-  background: linear-gradient(135deg, rgba(45, 55, 72, 0.9), rgba(26, 32, 44, 0.9));
+.dark-mode .post-threads-indicator {
+  background: linear-gradient(135deg, rgba(53, 44, 72, 0.9), rgba(30, 26, 44, 0.9));
   color: #e2e8f0;
 }
 
-.dark-mode .tg-contact-indicator {
-  background: linear-gradient(135deg, rgba(44, 55, 76, 0.9), rgba(26, 36, 55, 0.9));
+.dark-mode .post-ig-indicator {
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.9), rgba(26, 32, 44, 0.9));
   color: #e2e8f0;
 }
 
@@ -1084,34 +1160,354 @@ export default {
   color: white;
 }
 
-.tg-copy-btn {
+.app-container {
+  background-color: #f0f4f8;
+}
+
+.dark-mode .app-container {
+  background-color: #1a202c;
+}
+
+.main-content {
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.header-section {
+  background-color: #4299e1;
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.header-content {
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.main-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  font-size: 16px;
+  font-weight: normal;
+}
+
+.section-card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.section-icon {
+  font-size: 20px;
+  margin-right: 10px;
+}
+
+.section-desc {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.input-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.cute-input {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.drop-zone {
+  border: 2px dashed #4299e1;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.drop-active {
+  border-color: #48bb78;
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.drop-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.drop-text {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+.drag-active-text {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.browse-btn {
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+}
+
+.browse-btn:hover {
+  background-color: #3182ce;
+}
+
+.preview-btn {
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+}
+
+.preview-btn:hover {
+  background-color: #3182ce;
+}
+
+.progress-container {
+  margin-top: 10px;
+  height: 20px;
+  background-color: #f3f4f6;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4299e1;
+  transition: width 0.3s ease;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #48bb78;
+}
+
+.progress-text {
+  text-align: center;
+  font-weight: bold;
+}
+
+.success-card {
+  background-color: #f0fdf4;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.success-icon {
+  font-size: 24px;
+  color: #48bb78;
+  margin-right: 10px;
+}
+
+.success-text {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.success-emoji {
+  font-size: 24px;
+  margin-left: 10px;
+}
+
+.results-container {
+  margin-top: 20px;
+}
+
+.result-card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.result-number {
+  font-size: 16px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.result-badges {
+  display: flex;
+  align-items: center;
+}
+
+.badge {
+  background-color: #4299e1;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.result-content {
+  margin-top: 10px;
+}
+
+.result-text {
+  white-space: pre-wrap;
+}
+
+.indicator-card {
+  background-color: #f3f4f6;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.indicator-header {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.indicator-content {
+  display: flex;
+  align-items: center;
+}
+
+.post-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.photo-indicator a {
+  color: #4299e1;
+  text-decoration: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 80%;
+  max-height: 80%;
+  overflow: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-close {
   background: none;
   border: none;
+  font-size: 18px;
   cursor: pointer;
-  margin-left: 8px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #a3bffa, #7f9cf5);
+}
+
+.modal-body {
+  max-height: calc(100% - 100px);
+  overflow-y: auto;
+}
+
+.preview-table-container {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preview-table th,
+.preview-table td {
+  padding: 8px;
+  text-align: left;
+}
+
+.preview-table th {
+  background-color: #f3f4f6;
+}
+
+.footer-section {
+  background-color: #4299e1;
   color: white;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+  text-align: center;
 }
 
-.tg-copy-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  background: linear-gradient(135deg, #7f9cf5, #667eea);
+.minecraft-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.tg-copy-btn:active {
-  transform: scale(0.95);
-}
-
-.tg-copy-btn i {
-  font-size: 14px;
+.minecraft-btn:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
 }
 </style> 
