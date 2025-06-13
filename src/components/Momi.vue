@@ -72,8 +72,8 @@
               <input 
                 type="file" 
                 ref="fileInput"
-                accept=".xlsx, .xls"
-                @change="clearFileError"
+                accept=".xlsx,.xls"
+                @change="handleFileChange"
                 class="file-input"
               />
               <button class="browse-btn" @click="fileInput?.click()">
@@ -84,6 +84,11 @@
             <div v-if="errors.file" class="error-message">
               <i class="fas fa-exclamation-circle"></i>
               {{ errors.file }}
+            </div>
+            
+            <div v-if="selectedFileName" class="file-selected-indicator">
+              <i class="fas fa-check-circle"></i>
+              已選擇: {{ selectedFileName }}
             </div>
           </div>
 
@@ -380,6 +385,7 @@ export default {
     const catEarMainColor = ref('#4299e1')  // Tailwind blue-500
     const catEarInnerColor = ref('#63b3ed')  // Tailwind blue-400
     const catEarAction = ref(ActionName.RELAXED)
+    const selectedFileName = ref('')
 
     // Update the providers with more specific interactions
     const activeProviders = [
@@ -531,12 +537,18 @@ export default {
       if (!fileInput.value?.files?.length) {
         newErrors.file = '請選擇一個 Excel 檔案。'
       }
-      if (!startNumber.value || isNaN(startNumber.value)) {
-        newErrors.startNumber = '請輸入有效的起始數字。'
+      
+      const startNum = parseInt(startNumber.value)
+      // Allow empty offset, default to 0
+      const offsetNum = offset.value === '' ? 0 : parseInt(offset.value)
+      
+      if (!startNumber.value || isNaN(startNum) || startNum < 1) {
+        newErrors.startNumber = '請輸入有效的起始數字（必須大於0）。'
       }
-      if (!offset.value || isNaN(offset.value)) {
-        newErrors.offset = '請輸入有效的偏移值。'
+      if (offset.value !== '' && (isNaN(offsetNum) || offsetNum < 0)) {
+        newErrors.offset = '請輸入有效的偏移值（必須大於等於0）。'
       }
+      
       errors.value = newErrors
       return Object.keys(newErrors).length === 0
     }
@@ -560,9 +572,11 @@ export default {
         const file = e.dataTransfer.files[0]
         if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
           fileInput.value.files = e.dataTransfer.files
+          selectedFileName.value = file.name
           errors.value = { ...errors.value, file: '' }
         } else {
           errors.value = { ...errors.value, file: '請上傳 Excel 檔案 (.xlsx 或 .xls)' }
+          selectedFileName.value = ''
         }
       }
     }
@@ -596,9 +610,20 @@ export default {
         const worksheet = workbook.Sheets[sheetName]
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
 
-        const startRowIndex = parseInt(startNumber.value) + parseInt(offset.value) - 1
+        const startNum = parseInt(startNumber.value)
+        // Allow empty offset, default to 0
+        const offsetNum = offset.value === '' ? 0 : parseInt(offset.value)
+        // Skip header row (row 0) and add offset
+        const startRowIndex = 1 + offsetNum
+        
+        console.log('Debug:', { startNum, offsetNum, startRowIndex, totalRows: jsonData.length })
+        
+        if (isNaN(startRowIndex) || startRowIndex < 0) {
+          errors.value = { file: '起始數字和偏移值計算錯誤，請檢查輸入值。' }
+          return
+        }
         if (startRowIndex >= jsonData.length) {
-          errors.value = { file: `起始數字加偏移值指向的行（第 ${startRowIndex + 1} 行）超出範圍。` }
+          errors.value = { file: `起始數字加偏移值指向的行（第 ${startRowIndex + 1} 行）超出範圍。檔案總共有 ${jsonData.length} 行數據。` }
           return
         }
 
@@ -639,9 +664,12 @@ export default {
           
           entry += `聯絡方式：${contactInfo}\n\n`
           
-          // Add photo link if available
-          if (row[8]) {
-            entry += `照片連結：${row[8]}\n\n`
+          // Get actual photo link data (not header)
+          const photoLink = row[8] && row[8] !== '照片連結' ? row[8] : null
+          
+          // Add photo link if available and not a header
+          if (photoLink) {
+            entry += `照片連結：${photoLink}\n\n`
           }
           
           // Check row 9: Need to post Threads?
@@ -656,8 +684,8 @@ export default {
 
           newFormattedData.push({ 
             text: entry, 
-            hasPhoto: !!row[8], 
-            photoLink: row[8] || null,
+            hasPhoto: !!photoLink, 
+            photoLink: photoLink,
             hasTG: hasTG,
             hasIG: hasIG,
             hasUnidentifiedContact: hasUnidentifiedContact,
@@ -777,6 +805,22 @@ export default {
       }, 2000)
     }
 
+    const handleFileChange = (e) => {
+      const file = e.target.files[0]
+      if (file) {
+        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          errors.value = { ...errors.value, file: '' }
+          selectedFileName.value = file.name
+          console.log('File selected:', file.name)
+        } else {
+          errors.value = { ...errors.value, file: '請上傳 Excel 檔案 (.xlsx 或 .xls)' }
+          selectedFileName.value = ''
+        }
+      } else {
+        selectedFileName.value = ''
+      }
+    }
+
     const clearFileError = () => {
       errors.value = { ...errors.value, file: '' }
     }
@@ -852,6 +896,7 @@ export default {
       handleCopyToClipboard,
       handlePreview,
       handlePetInteraction,
+      handleFileChange,
       clearFileError,
       clearStartNumberError,
       clearOffsetError,
@@ -861,7 +906,8 @@ export default {
       catEarAction,
       catEarMainColor,
       catEarInnerColor,
-      handleMinecraftClick
+      handleMinecraftClick,
+      selectedFileName
     }
   }
 }
