@@ -18,19 +18,20 @@
     "@vueuse/core": "^10.11.1",
     "animejs": "^3.2.2",
     "canvas-confetti": "^1.6.0",
+    "entities": "^6.0.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.17.1",
     "lodash-es": "^4.17.21",
-    "nanoid": "^4.0.2",
+    "nanoid": "^5.1.5",
     "remeda": "^1.61.0",
-    "vue": "^3.3.4",
-    "xlsx": "^0.18.5",
-    "express": "^4.17.1"
+    "vue": "^3.3.4"
   },
   "devDependencies": {
     "@types/node": "^18.15.11",
-    "@vitejs/plugin-vue": "^4.2.3",
+    "@vitejs/plugin-vue": "^5.2.4",
     "gh-pages": "^6.3.0",
-    "sass": "1.32.13",
+    "sass": "^1.89.2",
     "typescript": "^5.0.2",
-    "vite": "^4.3.9"
+    "vite": "^6.3.5"
   }
 }

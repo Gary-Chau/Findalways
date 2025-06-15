@@ -220,6 +220,26 @@
                 
                 <div class="result-content">
                   <pre class="result-text">{{ entry.text }}</pre>
+                  
+                  <!-- Individual Action Buttons -->
+                  <div class="individual-actions">
+                    <button 
+                      class="individual-btn copy-individual-btn" 
+                      @click="handleCopyIndividual(entry.text, index)"
+                      :title="`複製第${parseInt(startNumber) + index}位的內容`"
+                    >
+                      <i class="fas fa-copy"></i>
+                      複製此條
+                    </button>
+                    <button 
+                      class="individual-btn download-individual-btn" 
+                      @click="handleDownloadIndividual(entry.text, parseInt(startNumber) + index)"
+                      :title="`下載第${parseInt(startNumber) + index}位的內容`"
+                    >
+                      <i class="fas fa-download"></i>
+                      下載此條
+                    </button>
+                  </div>
                 </div>
                 
                 <!-- Contact Type Indicator -->
@@ -392,7 +412,7 @@
 
 <script>
 import { ref, computed, onMounted, watch } from 'vue'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import confetti from 'canvas-confetti'
 import CursorSidekick from './cursor-sidekick/cursor-sidekick.vue'
 import WrapperCatEar from './wrapper-cat-ear/wrapper-cat-ear.vue'
@@ -645,11 +665,49 @@ export default {
 
       try {
         const file = fileInput.value.files[0]
-        const data = await readFile(file)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+        console.log('Processing file:', file.name)
+        
+        const arrayBuffer = await readFile(file)
+        console.log('File read successfully, size:', arrayBuffer.byteLength)
+        
+        // Use ExcelJS instead of XLSX
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.load(arrayBuffer)
+        console.log('Workbook loaded, worksheets:', workbook.worksheets.length)
+        
+        const worksheet = workbook.worksheets[0]
+        console.log('Worksheet selected, row count:', worksheet.rowCount)
+        
+        const jsonData = []
+        
+        // Convert worksheet to array format with better empty cell handling
+        worksheet.eachRow((row, rowNumber) => {
+          const rowData = []
+          // Get the maximum column count to ensure we capture all columns
+          const maxCol = Math.max(row.cellCount, 11) // Ensure at least 11 columns
+          
+          for (let colNumber = 1; colNumber <= maxCol; colNumber++) {
+            const cell = row.getCell(colNumber)
+            // Handle different cell value types and null/undefined
+            let cellValue = cell.value
+            
+            if (cellValue === null || cellValue === undefined) {
+              cellValue = ''
+            } else if (typeof cellValue === 'object' && cellValue.text) {
+              // Handle rich text objects
+              cellValue = cellValue.text
+            } else if (typeof cellValue === 'object' && cellValue.result !== undefined) {
+              // Handle formula results
+              cellValue = cellValue.result
+            }
+            
+            rowData[colNumber - 1] = cellValue
+          }
+          jsonData.push(rowData)
+        })
+
+        console.log('Data converted, total rows:', jsonData.length)
+        console.log('First few rows:', jsonData.slice(0, 3))
 
         const startNum = parseInt(startNumber.value)
         // Allow empty offset, default to 0
@@ -673,17 +731,29 @@ export default {
           const row = jsonData[i + startRowIndex]
           if (!row) continue
 
+          console.log(`Processing row ${i + startRowIndex}:`, row)
+
           const currentNumber = parseInt(startNumber.value) + i
+          
+          // Helper function to safely get cell value
+          const getCellValue = (index) => {
+            const value = row[index]
+            if (value === null || value === undefined || value === '') {
+              return 'N/A'
+            }
+            return String(value).trim()
+          }
+          
           let entry = `第${currentNumber}位投稿人嚟啦～\n\n`
-          entry += `名字：${row[1] || 'N/A'}\n`
-          entry += `性別：${row[2] || 'N/A'}\n`
-          entry += `年齡：${row[3] || 'N/A'}\n`
-          entry += `身高：${row[4] || 'N/A'}\n\n`
-          entry += `描述自已：${row[5] || 'N/A'}\n\n`
-          entry += `要求：${row[6] || 'N/A'}\n\n`
+          entry += `名字：${getCellValue(1)}\n`
+          entry += `性別：${getCellValue(2)}\n`
+          entry += `年齡：${getCellValue(3)}\n`
+          entry += `身高：${getCellValue(4)}\n\n`
+          entry += `描述自已：${getCellValue(5)}\n\n`
+          entry += `要求：${getCellValue(6)}\n\n`
           
           // Process contact information - but don't include in text
-          const contactInfo = row[7] || 'N/A'
+          const contactInfo = getCellValue(7)
           let hasTG = false
           let hasIG = false
           let hasUnidentifiedContact = false
@@ -737,15 +807,28 @@ export default {
           }
           
           // Get actual photo link data (not header) - but don't include in text
-          const photoLink = row[8] && row[8] !== '照片連結' ? row[8] : null
+          const photoLinkValue = getCellValue(8)
+          const photoLink = (photoLinkValue !== 'N/A' && photoLinkValue !== '照片連結') ? photoLinkValue : null
           
           // Check row 9: Need to post Threads?
-          const needPostThreads = row[9] === '需要' ? true : false
+          const threadsValue = getCellValue(9)
+          const needPostThreads = threadsValue === '需要'
           
           // Check row 10: Need to post IG?
-          const needPostIG = row[10] === '需要' ? true : false
+          const igValue = getCellValue(10)
+          const needPostIG = igValue === '需要'
           
-          entry += '如果有緣人想認識無留tg既投稿人，可以dm平台的！🙊🙊🙊🙊🙊\n'
+          console.log(`Row ${i + startRowIndex} processed:`, {
+            contactInfo,
+            photoLink,
+            needPostThreads,
+            needPostIG,
+            hasTG,
+            hasIG,
+            hasUnidentifiedContact
+          })
+          
+          entry += '如果有緣人想認識投稿人，可以dm平台的！🙊🙊🙊🙊🙊\n'
           entry += '若想投稿歡迎填form💕 有任何問題、無聊都歡迎搵平台詢問傾計呀～！🥰✨\n'
           entry += '投稿link係主頁🧨大家隨意投稿🎐\n\n'
 
@@ -785,7 +868,17 @@ export default {
           output.value.scrollIntoView({ behavior: 'smooth' })
         }
       } catch (error) {
-        errors.value = { file: '處理過程中出現錯誤，請檢查您的 Excel 檔案格式。' }
+        console.error('Processing error:', error)
+        console.error('Error stack:', error.stack)
+        
+        let errorMessage = '處理過程中出現錯誤：'
+        if (error.message) {
+          errorMessage += error.message
+        } else {
+          errorMessage += '請檢查您的 Excel 檔案格式。'
+        }
+        
+        errors.value = { file: errorMessage }
         
         // Change ear color and action on error
         catEarMainColor.value = '#f56565'
@@ -828,16 +921,91 @@ export default {
       }
     }
 
+    const handleCopyIndividual = async (text, index) => {
+      try {
+        await navigator.clipboard.writeText(text)
+        const personNumber = parseInt(startNumber.value) + index
+        successMessage.value = `已複製第${personNumber}位的內容到剪貼板！`
+        setTimeout(() => successMessage.value = '', 3000)
+        
+        // Add a small celebration effect
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.8 },
+          colors: ['#4299e1', '#48bb78']
+        })
+      } catch (err) {
+        errors.value = { clipboard: '複製失敗，請手動複製。' }
+      }
+    }
+
+    const handleDownloadIndividual = (text, personNumber) => {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `第${personNumber}位投稿人.txt`
+      link.click()
+      URL.revokeObjectURL(link.href)
+
+      successMessage.value = `第${personNumber}位的檔案已成功下載！`
+      setTimeout(() => successMessage.value = '', 3000)
+      
+      // Add celebration effect
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.8 },
+        colors: ['#667eea', '#764ba2', '#f093fb']
+      })
+    }
+
     const handlePreview = async () => {
       if (!fileInput.value?.files?.length) return
-      const file = fileInput.value.files[0]
-      const data = await readFile(file)
-      const workbook = XLSX.read(data, { type: 'array' })
-      const sheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[sheetName]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-      previewData.value = jsonData.slice(0, 5)
-      showPreview.value = true
+      
+      try {
+        const file = fileInput.value.files[0]
+        const arrayBuffer = await readFile(file)
+        
+        // Use ExcelJS instead of XLSX
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.load(arrayBuffer)
+        
+        const worksheet = workbook.worksheets[0]
+        const jsonData = []
+        
+        // Convert first 5 rows to array format for preview
+        let rowCount = 0
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowCount >= 5) return
+          const rowData = []
+          // Get the maximum column count to ensure we capture all columns
+          const maxCol = Math.max(row.cellCount, 11) // Ensure at least 11 columns
+          
+          for (let colNumber = 1; colNumber <= maxCol; colNumber++) {
+            const cell = row.getCell(colNumber)
+            let cellValue = cell.value
+            
+            if (cellValue === null || cellValue === undefined) {
+              cellValue = ''
+            } else if (typeof cellValue === 'object' && cellValue.text) {
+              cellValue = cellValue.text
+            } else if (typeof cellValue === 'object' && cellValue.result !== undefined) {
+              cellValue = cellValue.result
+            }
+            
+            rowData[colNumber - 1] = cellValue
+          }
+          jsonData.push(rowData)
+          rowCount++
+        })
+        
+        previewData.value = jsonData
+        showPreview.value = true
+      } catch (error) {
+        console.error('Preview error:', error)
+        errors.value = { file: '預覽失敗：' + (error.message || '請檢查檔案格式') }
+      }
     }
 
     const runFireworks = () => {
@@ -963,6 +1131,8 @@ export default {
       handleProcess,
       handleDownload,
       handleCopyToClipboard,
+      handleCopyIndividual,
+      handleDownloadIndividual,
       handlePreview,
       handlePetInteraction,
       handleFileChange,
@@ -1096,7 +1266,7 @@ export default {
 }
 
 .minecraft-btn:hover {
-  background: #45a049;
+  background-color: #45a049;
   transform: translateY(-2px);
 }
 
@@ -1171,25 +1341,44 @@ export default {
 }
 
 .photo-indicator a {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-left: 8px;
-  padding: 4px 12px;
-  background: linear-gradient(135deg, #38b2ac, #319795);
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24, #fd79a8);
   color: white;
   text-decoration: none;
-  border-radius: 20px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  position: relative;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 250px;
-  white-space: nowrap;
+}
+
+.photo-indicator a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.photo-indicator a:hover::before {
+  left: 100%;
 }
 
 .photo-indicator a:hover {
-  transform: scale(1.05);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(255, 107, 107, 0.6);
+  background: linear-gradient(135deg, #fd79a8, #fdcb6e, #e17055);
 }
 
 /* Dark mode adjustments */
@@ -1209,8 +1398,14 @@ export default {
 }
 
 .dark-mode .photo-indicator a {
-  background: linear-gradient(135deg, #2c7a7b, #285e61);
+  background: linear-gradient(135deg, #e74c3c, #c0392b, #e91e63);
   color: white;
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+}
+
+.dark-mode .photo-indicator a:hover {
+  background: linear-gradient(135deg, #fd79a8, #fdcb6e, #e17055);
+  box-shadow: 0 12px 30px rgba(231, 76, 60, 0.7);
 }
 
 /* Make contact indicators match the new style */
