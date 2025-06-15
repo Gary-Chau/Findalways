@@ -50,8 +50,6 @@
           @error="handleAudioError"
         >
           <source src="/bgm/lofi.mp3" type="audio/mpeg">
-          <source src="./bgm/lofi.mp3" type="audio/mpeg">
-          <source src="../bgm/lofi.mp3" type="audio/mpeg">
           您的瀏覽器不支援音頻播放。
         </audio>
       </div>
