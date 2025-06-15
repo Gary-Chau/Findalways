@@ -25,6 +25,37 @@
         </div>
       </transition>
 
+      <!-- Music Player -->
+      <div class="music-player">
+        <button class="music-btn play-btn" @click="toggleMusic" :title="isPlaying ? '暫停音樂' : '播放音樂'">
+          <i :class="['fas', isPlaying ? 'fa-pause' : 'fa-play']"></i>
+        </button>
+        
+        <div class="music-info" v-if="isPlaying">
+          <span class="music-note">🎵</span>
+          <span class="music-text">{{ currentSongName }}</span>
+        </div>
+        
+        <!-- Music Error Message -->
+        <div v-if="errors.music" class="music-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>{{ errors.music }}</span>
+        </div>
+        
+        <!-- Simple Audio Player -->
+        <audio 
+          ref="audioPlayer" 
+          loop 
+          preload="auto"
+          @error="handleAudioError"
+        >
+          <source src="/bgm/lofi.mp3" type="audio/mpeg">
+          <source src="./bgm/lofi.mp3" type="audio/mpeg">
+          <source src="../bgm/lofi.mp3" type="audio/mpeg">
+          您的瀏覽器不支援音頻播放。
+        </audio>
+      </div>
+
       <!-- Main Content -->
       <div class="main-content">
         <!-- Header Section -->
@@ -447,6 +478,14 @@ export default {
     const catEarInnerColor = ref('#63b3ed')  // Tailwind blue-400
     const catEarAction = ref(ActionName.RELAXED)
     const selectedFileName = ref('')
+
+    // Music player state
+    const audioPlayer = ref(null)
+    const isPlaying = ref(false)
+    
+    // Simple lofi background music - using working audio sources
+    const currentSongName = ref("Lofi Chill Beats 🎵")
+    const audioUrl = ref("https://www.soundjay.com/misc/sounds/bell-ringing-05.wav") // We'll replace this with a working lofi stream
 
     // Update the providers with more specific interactions
     const activeProviders = [
@@ -1074,6 +1113,51 @@ export default {
       window.open('https://gary-chau.github.io/Findalways-MC', '_blank')
     }
 
+    // Music player functions
+    const toggleMusic = async () => {
+      if (!audioPlayer.value) return
+      
+      try {
+        if (isPlaying.value) {
+          audioPlayer.value.pause()
+          isPlaying.value = false
+          catEarAction.value = ActionName.RELAXED
+        } else {
+          // Set volume to a comfortable level
+          audioPlayer.value.volume = 0.3
+          await audioPlayer.value.play()
+          isPlaying.value = true
+          catEarAction.value = ActionName.PEEKABOO
+          
+          // Add a little celebration when music starts
+          confetti({
+            particleCount: 30,
+            spread: 50,
+            origin: { y: 0.2, x: 0.9 },
+            colors: ['#667eea', '#764ba2', '#f093fb']
+          })
+        }
+      } catch (error) {
+        console.error('Music playback error:', error)
+        isPlaying.value = false
+        
+        // Show user-friendly error message
+        errors.value = { 
+          music: '音樂檔案載入失敗。請確保 bgm 資料夾中有 MP3 檔案。' 
+        }
+        setTimeout(() => {
+          if (errors.value.music) {
+            delete errors.value.music
+          }
+        }, 5000)
+      }
+    }
+
+    const handleAudioError = () => {
+      console.log('Audio error, trying alternative stream...')
+      isPlaying.value = false
+    }
+
     // Progress bar effect
     watch(loading, (newValue) => {
       if (newValue) {
@@ -1146,7 +1230,13 @@ export default {
       catEarMainColor,
       catEarInnerColor,
       handleMinecraftClick,
-      selectedFileName
+      selectedFileName,
+      // Music player
+      audioPlayer,
+      isPlaying,
+      currentSongName,
+      toggleMusic,
+      handleAudioError
     }
   }
 }
